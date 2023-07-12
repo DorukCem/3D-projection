@@ -13,7 +13,7 @@ screen = pygame.display.set_mode((WIDTH ,  HEIGHT))
 clock = pygame.time.Clock()
 
 scale = 100
-position = [WIDTH/2, HEIGHT/2, 5]  # x, y
+position = [WIDTH/2, HEIGHT/2, 0]  # x, y
 angle = 0
 camera_dist = 20
 
@@ -54,8 +54,8 @@ def rot_mat_y(a):
 
 def rot_mat_z(a):
     return np.array([
-        [cos(a), 0, -sin(a), 0],
-        [sin(a), 0, cos(a), 0],
+        [cos(a), -sin(a), 0, 0],
+        [sin(a), cos(a),0, 0],
         [0, 0, 1, 0],
         [0, 0, 0, 1]
         ])
@@ -106,21 +106,23 @@ while True:
     projected_points = []
     for v in cube_vertices:
         print(v)
-        scaled = v * 100
-        exp = np.array([*scaled, 1]) #(-100, 100, 0, 1)
-        trans = np.dot(translate_mat(position), exp) #(300, 500, 5, 1)
-        print(trans)
-        print("----")
-        rot_x = np.dot(rot_mat_x(angle), trans) 
+        exp = np.array([*v, 1]) #(-1, 1, 0, 1)
+        rot_x = np.dot(rot_mat_x(angle), exp) 
+        print(rot_x)
         rot_y = np.dot(rot_mat_y(angle), rot_x)
-        point4d = np.dot(rot_mat_z(angle), rot_y)
+        print(rot_y)
+        rot_z = np.dot(rot_mat_z(angle), rot_y)
+        rot_z = rot_z * scale
+        rot_z[3] = 1
+        
+        point4d = np.dot(translate_mat(position), rot_z) #(300, 500, 5, 1)
+        
+        print("----")
 
         point4d /= point4d[3]
-        projection_matrix = point4d 
-        x, y, z, w = projection_matrix
+        x, y, z, w = point4d
         
-       
-
+    
         projected_points.append((x,y))
 
         #draw points
