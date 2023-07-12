@@ -13,9 +13,9 @@ screen = pygame.display.set_mode((WIDTH ,  HEIGHT))
 clock = pygame.time.Clock()
 
 scale = 100
-origin = [WIDTH/2, HEIGHT/2]  # x, y
+position = [WIDTH/2, HEIGHT/2, 5]  # x, y
 angle = 0
-camera_dist = 3
+camera_dist = 20
 
 cube_vertices= [
     np.array([-1,-1,-1]),
@@ -29,32 +29,46 @@ cube_vertices= [
    ]
 
 projection_matrix = np.array([ 
-    [1, 0, 0],
-    [0, 1, 0],
-    [0, 0, 0]
+    [1, 0, 0, 0],
+    [0, 1, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, 0, 1]
 ])
 
 # One dimension stays the same, since we are rotating around that axis
 def rot_mat_x(a):
     return np.array([
-        [1, 0, 0],
-        [0, cos(a), sin(a)], 
-        [0, sin(a), cos(a)],
+        [1, 0, 0, 0],
+        [0, cos(a), -sin(a), 0], 
+        [0, sin(a), cos(a), 0],
+        [0, 0, 0, 1]
     ])
 
 def rot_mat_y(a):
     return np.array([
-        [cos(a), 0, sin(a)],
-        [0, 1, 0],
-        [-sin(a), 0, cos(a)]
+        [cos(a), 0, sin(a), 0],
+        [0, 1, 0, 0],
+        [-sin(a), 0, cos(a), 0],
+        [0, 0, 0, 1]
         ])
 
 def rot_mat_z(a):
     return np.array([
-        [cos(a), 0, sin(a)],
-        [-sin(a), 0, cos(a)],
-        [0, 0, 1]
+        [cos(a), 0, -sin(a), 0],
+        [sin(a), 0, cos(a), 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]
         ])
+
+def translate_mat(p):
+    x,y,z = p
+    return np.array([
+        [1, 0, 0, x],
+        [0, 1, 0, y],
+        [0, 0, 1, z],
+        [0, 0, 0, 1]
+    ])
+
 
 def draw_edges(vertices):
     edges = [
@@ -77,6 +91,7 @@ def draw_edges(vertices):
         pygame.draw.line(screen, WHITE, vertices[a], vertices[b], 1)
 
 
+
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -86,19 +101,26 @@ while True:
     screen.fill( BLACK )
 
     angle += 0.03
+    
 
     projected_points = []
     for v in cube_vertices:
-        rot_x = np.dot(rot_mat_x(angle), v)
+        print(v)
+        scaled = v * 100
+        exp = np.array([*scaled, 1]) #(-100, 100, 0, 1)
+        trans = np.dot(translate_mat(position), exp) #(300, 500, 5, 1)
+        print(trans)
+        print("----")
+        rot_x = np.dot(rot_mat_x(angle), trans) 
         rot_y = np.dot(rot_mat_y(angle), rot_x)
-        rot_z = np.dot(rot_mat_z(angle), rot_y)
-        point3d = np.dot(projection_matrix, rot_z)
+        point4d = np.dot(rot_mat_z(angle), rot_y)
 
-        x, y, z = point3d
-
-        x = x * scale + origin[0]
-        y = y * scale + origin[1]
+        point4d /= point4d[3]
+        projection_matrix = point4d 
+        x, y, z, w = projection_matrix
+        
        
+
         projected_points.append((x,y))
 
         #draw points
